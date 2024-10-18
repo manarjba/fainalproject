@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cart</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+
+        header {
+            background-color: #333;
+            color: #fff;
+            padding: 10px;
+            text-align: center;
+        }
+
+        nav a {
+            color: #fff;
+            margin: 0 10px;
+            text-decoration: none;
+        }
+
+        main {
+            padding: 20px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #f2f2f2;
+        }
+
+        button {
+            padding: 10px 15px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>My Cart</h1>
+        <nav>
+            <a href="index.html">Home</a> |
+            <a href="profile.html">My Profile</a>
+        </nav>
+    </header>
+
+    <main>
+        <section class="cart">
+            <h1>Your Cart</h1>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Book Title</th>
+                        <th>Quantity</th>
+                        <th>Price</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody id="cartItems">
+                    <!-- Cart items will be dynamically added here -->
+                </tbody>
+            </table>
+            <p id="totalPrice">Total Price: $0</p>
+            <button id="checkoutButton">Checkout</button> <!-- إضافة id لزر Checkout -->
+        </section>
+    </main>
+
+    <script>
+      document.addEventListener('DOMContentLoaded', () => {
+    const cartId = localStorage.getItem('cart_id') || 1;
+
+    fetch(`http://localhost:3000/cart-items/${cartId}`)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.json();
+        })
+        .then(data => {
+            const cartItems = document.getElementById('cartItems');
+            let totalPrice = 0;
+            cartItems.innerHTML = '';
+
+            data.forEach(item => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${item.book_title || 'Unknown Title'}</td>
+                    <td>${item.quantity}</td>
+                    <td>$${(item.quantity * item.book_price).toFixed(2)}</td>
+                    <td><button onclick="removeFromCart(${item.item_id})">Remove</button></td>
+                `;
+                totalPrice += item.quantity * item.book_price;
+                cartItems.appendChild(row);
+            });
+
+            document.getElementById('totalPrice').innerText = `Total Price: $${totalPrice.toFixed(2)}`;
+        })
+        .catch(error => console.error('Error fetching cart items:', error));
+
+    // اضف هنا حدث زر Checkout ليتم تفعيله عند تحميل الصفحة
+    document.getElementById('checkoutButton').addEventListener('click', () => {
+        const items = [];
+        document.querySelectorAll('#cartItems tr').forEach(row => {
+            const bookTitle = row.cells[0].innerText;
+            const quantity = row.cells[1].innerText;
+            const price = row.cells[2].innerText;
+
+            items.push({
+                title: bookTitle,
+                quantity: parseInt(quantity),
+                price: parseFloat(price.replace('$', ''))
+            });
+        });
+
+        // تخزين بيانات السلة في localStorage
+        localStorage.setItem('cartItems', JSON.stringify(items));
+
+        // الانتقال إلى صفحة checkout
+        window.location.href = 'Checkout.html';
+    });
+});
+
+function removeFromCart(itemId) {
+    fetch(`http://localhost:3000/cart-items/${itemId}`, {
+        method: 'DELETE',
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        // تحديث السلة بدلاً من إعادة تحميل الصفحة
+        document.getElementById('cartItems').innerHTML = ''; // تفريغ المحتوى الحالي
+        const cartId = localStorage.getItem('cart_id') || 1; // استخدم cart_id من التخزين المحلي أو افترض 1
+        return fetch(`http://localhost:3000/cart-items/${cartId}`);
+    })
+    .then(response => response.json())
+    .then(data => {
+        const cartItems = document.getElementById('cartItems');
+        let totalPrice = 0;
+        data.forEach(item => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${item.book_title || 'Unknown Title'}</td>
+                <td>${item.quantity}</td>
+                <td>$${(item.quantity * item.book_price).toFixed(2)}</td>
+                <td><button onclick="removeFromCart(${item.item_id})">Remove</button></td>
+            `;
+            totalPrice += item.quantity * item.book_price;
+            cartItems.appendChild(row);
+        });
+
+        document.getElementById('totalPrice').innerText = `Total Price: $${totalPrice.toFixed(2)}`;
+    })
+    .catch(error => console.error('Error updating cart:', error));
+}
+    </script>
+</body>
+</html>

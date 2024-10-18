@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Online Bookstore - Homepage</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f9f9f9; /* لون خلفية محايد */
+        }
+
+        header {
+            background-color: #4CAF50; /* لون رأس الصفحة */
+            color: #fff;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2); /* ظل خفيف */
+        }
+
+        nav a {
+            color: #fff;
+            margin: 0 15px;
+            text-decoration: none;
+            font-weight: bold;
+        }
+
+        nav a:hover {
+            text-decoration: underline; /* تأثير عند التحويم */
+        }
+
+        main {
+            padding: 20px;
+        }
+
+        h2 {
+            color: #333; /* لون العناوين */
+        }
+
+        .book {
+            border: 1px solid #ddd;
+            border-radius: 8px; /* زوايا دائرية */
+            padding: 15px;
+            margin-bottom: 20px;
+            background-color: #fff; /* لون خلفية العنصر */
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* ظل خفيف */
+            transition: transform 0.3s; /* تأثير عند التحويم */
+        }
+
+        .book:hover {
+            transform: scale(1.02); /* تكبير طفيف عند التحويم */
+        }
+
+        .book button {
+            background-color: #007bff; /* لون الزر */
+            color: white;
+            border: none;
+            border-radius: 5px;
+            padding: 10px 15px;
+            cursor: pointer;
+            transition: background-color 0.3s; /* تأثير عند التحويم */
+        }
+
+        .book button:hover {
+            background-color: #0056b3; /* لون الزر عند التحويم */
+        }
+
+        .cart-item {
+            border: 1px solid #ddd;
+            padding: 10px;
+            margin-bottom: 10px;
+            background-color: #f9f9f9; /* لون خلفية العناصر في السلة */
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Welcome to Online Bookstore</h1>
+        <nav>
+            <a href="cart.html">View Cart</a> |
+            <a href="profile.html">My Profile</a>|
+        </nav>
+    </header>
+
+    <main>
+        <h2>Available Books</h2>
+        <div id="booksList">
+            <!-- سيتم إدراج الكتب هنا باستخدام جافا سكريبت -->
+        </div>
+        <h2>Your Cart</h2>
+        <div id="cartItems">
+            <!-- سيتم إدراج عناصر السلة هنا -->
+        </div>
+    </main>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            fetch('http://localhost:3000/books')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    const booksList = document.getElementById('booksList');
+                    booksList.innerHTML = '';
+                    data.forEach(book => {
+                        const bookDiv = document.createElement('div');
+                        bookDiv.classList.add('book');
+                        bookDiv.innerHTML = `
+                            <h3>${book.title}</h3>
+                            <p>Author: ${book.author}</p>
+                            <p>Price: $${book.price}</p>
+                            <button onclick="addToCart(${book.book_ID})">Add to Cart</button>
+                            <a href="book-details.html?book_id=${book.book_ID}">View Details</a>
+                        `;
+                        booksList.appendChild(bookDiv);
+                    });
+                })
+                .catch(error => {
+                    console.error('Error fetching books:', error);
+                    const booksList = document.getElementById('booksList');
+                    booksList.innerHTML = '<p>Failed to load books.</p>';
+                });
+                
+        });
+
+        function addToCart(bookId) {
+            const cartId = localStorage.getItem('cart_id'); // جلب معرّف السلة من التخزين المحلي
+            
+            if (!cartId) {
+                console.error('Cart ID not found for the user');
+                return;
+            }
+            
+            const data = { cart_id: cartId, book_id1: bookId, quantity: 1 };
+
+            fetch('http://localhost:3000/cart-items', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
+            .then(() => {
+                alert('Book added to cart!');
+                updateCart(); // تحديث السلة بعد إضافة عنصر
+            })
+            .catch(error => console.error('Error adding to cart:', error));
+        }
+
+        function updateCart() {
+            const cartId = localStorage.getItem('cart_id');
+            
+            if (!cartId) {
+                console.error('Cart ID not found for the user');
+                return;
+            }
+            
+            fetch(`http://localhost:3000/cart-items/${cartId}`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`Network response was not ok: ${response.status} ${response.statusText}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    const cartItems = document.getElementById('cartItems');
+                    cartItems.innerHTML = ''; // تأكد من أن العنصر موجود
+                    data.forEach(item => {
+                        const itemDiv = document.createElement('div');
+                        itemDiv.classList.add('cart-item');
+                        itemDiv.innerHTML = `
+                            <p>Book ID: ${item.book_id1}</p>
+                            <p>Quantity: ${item.quantity}</p>
+                        `;
+                        cartItems.appendChild(itemDiv);
+                    });
+                })
+                .catch(error => console.error('Error fetching cart items:', error));
+        }
+    </script>
+</body>
+</html>

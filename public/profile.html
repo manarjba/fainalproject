@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Profile</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 20px;
+        }
+        h1 {
+            text-align: center;
+        }
+        .container {
+            max-width: 600px;
+            margin: auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        label {
+            display: block;
+            margin: 10px 0 5px;
+        }
+        input[type="text"],
+        input[type="email"],
+        input[type="password"],
+        input[type="file"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin-bottom: 10px;
+        }
+        input[readonly] {
+            background-color: #f0f0f0; /* لون خلفية لتمييز الحقول غير القابلة للتعديل */
+        }
+        button {
+            display: block;
+            width: 100%;
+            padding: 10px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .profile-image {
+            display: block;
+            margin: 0 auto 20px;
+            max-width: 150px;
+            border-radius: 75px; /* دائرة */
+            overflow: hidden;
+            border: 2px solid #ddd; /* إطار */
+        }
+        .profile-image img {
+            width: 100%;
+            height: auto;
+        }
+        .normal-image {
+            display: block;
+            margin: 20px auto;
+            max-width: 100%; /* لتناسب الصورة مع الشاشة */
+            height: auto; /* الحفاظ على نسبة العرض إلى الارتفاع */
+            border-radius: 8px; /* زاوية دائرية */
+        }
+        .orders-list {
+            margin-top: 20px;
+        }
+        .order-item {
+            background: #f9f9f9;
+            border: 1px solid #ddd;
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>User Profile</h1>
+
+        <!-- صورة عادية تحت العنوان -->
+        <img src="0921fc87aa989330b8d403014bf4f340.jpg" alt="Profile" class="normal-image"> <!-- استبدل your-image-url.jpg برابط الصورة الخاصة بك -->
+
+        <!-- صورة الملف الشخصي -->
+        <div class="profile-image" id="profileImageContainer">
+            <img id="profileImage" src="" alt="Profile Image" style="display:none;">
+        </div>
+
+        <form id="profileForm">
+            <label for="username">Username:</label>
+            <input type="text" id="username" name="username" required readonly>
+
+            <label for="email">Email:</label>
+            <input type="email" id="email" name="email" required readonly>
+
+            <label for="password">Password:</label>
+            <input type="password" id="password" name="password" placeholder="Leave blank to keep current password">
+
+            <button type="submit">Update Profile</button>
+        </form>
+    </div>
+
+    <script>
+document.addEventListener('DOMContentLoaded', () => {
+    const userId = sessionStorage.getItem('user_id');
+    if (!userId || userId === 'undefined') {
+        alert('You must be logged in to view this page.');
+        window.location.href = 'login.html'; // Redirect to login page
+        return;
+    }
+
+    // Fetch user data using the retrieved userId
+    fetch(`http://localhost:3000/users/${userId}`)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.json();
+        })
+        .then(user => {
+            document.getElementById('username').value = user.username;
+            document.getElementById('email').value = user.email;
+        })
+        .catch(error => {
+            console.error('Error fetching user data:', error);
+        });
+
+
+            // Handle profile update
+            document.getElementById('profileForm').addEventListener('submit', function(event) {
+                event.preventDefault();
+                
+
+                const updatedData = {
+                    username: document.getElementById('username').value,
+                    email: document.getElementById('email').value, // يبقى ثابتًا
+                    password: document.getElementById('password').value,
+                };
+
+                fetch(`http://localhost:3000/users/${userId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(updatedData)
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Error updating profile');
+                    }
+                    alert('Profile updated successfully!');
+                    window.location.href = 'index.html'; // Redirect to the homepage
+                })
+                .catch(error => {
+                    console.error('Error updating profile:', error);
+                    alert('Failed to update profile.');
+                });
+            });
+        });
+    </script>
+</body>
+</html>

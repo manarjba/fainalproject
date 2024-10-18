@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Your Orders</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
+        .container {
+            margin-top: 20px;
+            padding: 20px;
+            background-color: #ffffff;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        .order-item {
+            border-bottom: 1px solid #e9ecef;
+            padding: 15px 0;
+        }
+        .order-item:last-child {
+            border-bottom: none;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2 class="text-center">Your Orders</h2>
+    
+    <div id="orderDetails">
+        <!-- تفاصيل الطلب سيتم إضافتها هنا -->
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', async () => {
+    // الحصول على order_id من URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const orderId = urlParams.get('order_id');
+
+    if (!orderId) {
+        document.getElementById('orderDetails').innerHTML = '<p>No order ID provided.</p>';
+        return;
+    }
+
+    // جلب تفاصيل الطلب باستخدام order_id
+    try {
+        const response = await fetch(`http://localhost:3000/orders/${orderId}`);
+        if (!response.ok) {
+            throw new Error('Failed to fetch order details');
+        }
+        const order = await response.json();
+
+        // تحويل `total_price` إلى رقم إذا كان نصًا
+        const totalPrice = parseFloat(order.total_price) || 0;
+
+        let orderHtml = `
+            <h4>Order ID: ${order.order_id}</h4>
+            <p><strong>Order Date:</strong> ${order.order_date}</p>
+            <p><strong>Total Price:</strong> $${totalPrice.toFixed(2)}</p>
+            <p><strong>Shipping Address:</strong> ${order.address}, ${order.city}, ${order.country}, ${order.postal_code}</p>
+            <h5>Products:</h5>
+        `;
+
+        // عرض المنتجات ضمن الطلب
+        if (order.cart_items && order.cart_items.length > 0) {
+            order.cart_items.forEach(item => {
+                orderHtml += `
+                    <div class="order-item">
+                        <p>Product: <strong>${item.title}</strong></p>
+                        <p>Quantity: <strong>${item.quantity}</strong></p>
+                        <p>Price: <strong>$${(item.quantity * item.price).toFixed(2)}</strong></p>
+                    </div>
+                `;
+            });
+        } else {
+            orderHtml += '<p>No products found for this order.</p>';
+        }
+
+        document.getElementById('orderDetails').innerHTML = orderHtml;
+    } catch (error) {
+        console.error('Error fetching order details:', error);
+        document.getElementById('orderDetails').innerHTML = '<p>Error loading order details.</p>';
+    }
+});
+</script>
+
+</body>
+</html>
